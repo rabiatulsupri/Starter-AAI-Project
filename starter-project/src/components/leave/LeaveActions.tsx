@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   approveAction,
@@ -42,6 +42,10 @@ function ActionButton<P>({
 }) {
   const router = useRouter();
   const [state, dispatch, pending] = useActionState(run, {});
+  // The dispatch is called from the confirm box's click handler, so it must
+  // run inside a transition — React logs an error otherwise and pending
+  // never updates.
+  const [, start] = useTransition();
   const [confirming, setConfirming] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const showSuccess = Boolean(state.ok) && !dismissed;
@@ -72,7 +76,7 @@ function ActionButton<P>({
         onCancel={() => setConfirming(false)}
         onConfirm={() => {
           setConfirming(false);
-          dispatch(payload);
+          start(() => dispatch(payload));
         }}
       />
       <SuccessModal
@@ -140,6 +144,8 @@ export function ApproveButton({ requestId }: { requestId: number }) {
 export function RejectButton({ requestId }: { requestId: number }) {
   const router = useRouter();
   const [state, dispatch, pending] = useActionState(rejectAction, {});
+  // See ActionButton: the dispatch must run inside a transition.
+  const [, start] = useTransition();
   const [open, setOpen] = useState(false);
   const [remark, setRemark] = useState("");
   const [remarkError, setRemarkError] = useState("");
@@ -154,7 +160,7 @@ export function RejectButton({ requestId }: { requestId: number }) {
     setRemarkError("");
     setDismissed(false);
     setOpen(false);
-    dispatch({ id: requestId, remark: remark.trim() });
+    start(() => dispatch({ id: requestId, remark: remark.trim() }));
   }
 
   return (

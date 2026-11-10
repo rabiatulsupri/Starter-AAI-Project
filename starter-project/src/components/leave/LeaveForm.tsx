@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useActionState } from "react";
+import { useRef, useState, useActionState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createLeaveRequestAction } from "@/app/actions";
 import { LEAVE_TYPES, LEAVE_TYPE_LABELS, leaveDays, type LeaveType } from "@/lib/constants";
@@ -15,6 +15,10 @@ export function LeaveForm({ supervisors }: { supervisors: { id: number; name: st
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState(createLeaveRequestAction, {});
+  // The action is dispatched from the confirm box's click handler, so it must
+  // run inside a transition — otherwise React logs an error and pending never
+  // updates.
+  const [, start] = useTransition();
   const [confirming, setConfirming] = useState(false);
   // The success pop-up is derived from the action state (no effect needed):
   // shown when the action succeeded and not yet dismissed.
@@ -38,7 +42,8 @@ export function LeaveForm({ supervisors }: { supervisors: { id: number; name: st
   function submit() {
     setConfirming(false);
     setDismissed(false);
-    if (formRef.current) action(new FormData(formRef.current));
+    const form = formRef.current;
+    if (form) start(() => action(new FormData(form)));
   }
 
   const typeLabel = LEAVE_TYPE_LABELS[leaveType as LeaveType];
