@@ -81,3 +81,123 @@ has to work before anything else.
   checklist as each role. Make sure `README.md` explains how to install, run
   and test.
 - **Check:** Every AC box ticked; `npm run lint` and `npm run build` pass.
+
+---
+
+# Leave Request – Tasks
+
+> Same rules as the login tasks above: build **one task at a time**, in
+> order; the AI builds → a reviewer agent tests → **you check it in the
+> browser**. If a check fails, fix the spec first, then rebuild.
+>
+> **All eight tasks are Core** (Assumption A7): the brief's flow
+> employee → supervisor → HR → admin does not work without any of them.
+> Nothing in this module is Stretch.
+
+**Before you start:** Tasks 1–6 are already done; `npm run db:seed` still
+means clean data before every check.
+
+| # | Task | Core / Stretch | Checks (from requirements §4) |
+|---|------|----------------|-------------------------------|
+| 7 | Leave data model and demo requests | Core | – |
+| 8 | Employee home: own lists | Core | AC-15 |
+| 9 | New leave request form | Core | AC-10, AC-11, AC-12, AC-13, AC-14 |
+| 10 | Employee detail and Send to HR | Core | AC-18, AC-19, AC-23 |
+| 11 | Supervisor decides | Core | AC-16, AC-17, AC-18 |
+| 12 | HR shared queue and decision | Core | AC-20, AC-21, AC-22 |
+| 13 | Admin read-only view | Core | AC-24 |
+| 14 | Server-side enforcement and final walkthrough | Core | AC-25, then all |
+
+---
+
+## Task 7 – Leave data model and demo requests *(Core)*
+
+- **Goal:** The `LeaveRequest` table from design Part A §1, the leave-type
+  and status constants, and the 8 demo requests from design Part B §6.
+- **Files:** `prisma/schema.prisma`, a new migration in `prisma/migrations/`,
+  `prisma/seed.ts`, `src/lib/constants.ts`.
+- **Check:** `npm run db:migrate` creates the table; `npm run db:seed` prints
+  the 7 users and 8 requests; `npm run db:studio` shows rows covering all
+  five statuses, including one Signed and both rejection kinds.
+
+## Task 8 – Employee home: own lists *(Core)*
+
+- **Goal:** `/employee` becomes the home page from design Part B §5: the
+  employee's own to-act list on top, history below, A8 columns, status
+  badges, empty states, and a **New leave request** button.
+- **Files:** `src/lib/leave.ts` (list for a user), `src/components/leave/`
+  (`LeaveTable`, `StatusBadge`), `src/app/employee/page.tsx`.
+- **Check:** AC-15. After `npm run db:seed`, `employee-1` sees exactly their
+  5 requests with the right statuses and columns; nothing of `employee-2`
+  appears. `npm run lint` passes.
+
+## Task 9 – New leave request form *(Core)*
+
+- **Goal:** `/employee/leave/new` with type/dates/reason fields, a
+  division-supervisor dropdown, end-before-start and empty-field validation,
+  the calendar-days figure shown, confirm + success on submit, and the
+  blocked message when the division has no supervisor.
+- **Files:** `src/app/employee/leave/new/page.tsx`,
+  `src/components/leave/LeaveForm.tsx`, `src/app/actions.ts`
+  (create action), `src/lib/leave.ts` (supervisors of a division),
+  `src/lib/constants.ts` (days helper).
+- **Check:** AC-10, AC-11, AC-12, AC-13, AC-14 (including the Prisma Studio
+  division change, then `npm run db:seed` to restore).
+
+## Task 10 – Employee detail and Send to HR *(Core)*
+
+- **Goal:** `/employee/leave/[id]` shows one own request with status,
+  remarks and decider; **Send to HR** appears only on a *Signed* request
+  (confirm → success → *With HR*); no edit, cancel or reopen anywhere;
+  foreign ids give Not found.
+- **Files:** `src/app/employee/leave/[id]/page.tsx`,
+  `src/components/leave/LeaveDetail.tsx` (uses `DetailSection`),
+  `src/components/leave/LeaveActions`, `src/app/actions.ts`
+  (send-to-HR action).
+- **Check:** AC-18 (the remark on seeded request 5 is visible to
+  `employee-1`), AC-19 (seeded Signed request 2 goes to the HR queue; no
+  button on the others), AC-23 (rejected request 5 is inert; a fresh
+  request still works). As `employee-2`, open request 1's URL → Not found.
+
+## Task 11 – Supervisor decides *(Core)*
+
+- **Goal:** `/supervisor` home with the to-act list of their `SUBMITTED`
+  requests and history below; `/supervisor/leave/[id]` with **Sign** and
+  **Reject** – reject requires a remark – each with confirm and success;
+  the employee sees the new status and remark.
+- **Files:** `src/app/supervisor/page.tsx`,
+  `src/app/supervisor/leave/[id]/page.tsx`,
+  `src/components/leave/DecideDialog.tsx`, `src/app/actions.ts`
+  (sign, reject actions).
+- **Check:** AC-16, AC-17, AC-18 (supervisor side). As `supervisor-2`,
+  `supervisor-1`'s requests are not listed and their URL gives Not found.
+
+## Task 12 – HR shared queue and decision *(Core)*
+
+- **Goal:** `/hr` home with the shared queue – every `WITH_HR` request from
+  every division – plus full history; `/hr/leave/[id]` with **Approve** and
+  **Reject** (remark required); the deciding officer and date are recorded
+  and shown.
+- **Files:** `src/app/hr/page.tsx`, `src/app/hr/leave/[id]/page.tsx`,
+  `src/app/actions.ts` (approve action; HR branch of reject).
+- **Check:** AC-20, AC-21, AC-22.
+
+## Task 13 – Admin read-only view *(Core)*
+
+- **Goal:** `/admin` lists every request in the system; `/admin/leave/[id]`
+  shows status, remarks and decider with **no** action buttons anywhere.
+- **Files:** `src/app/admin/page.tsx`, `src/app/admin/leave/[id]/page.tsx`.
+- **Check:** AC-24.
+
+## Task 14 – Server-side enforcement and final walkthrough *(Core)*
+
+- **Goal:** The reviewer agent attempts every action (create, sign, reject,
+  send, approve) as the wrong role and the wrong status by calling the
+  server actions directly; each must be refused with nothing changed.
+  Then the full module walkthrough as each role from clean data, and the
+  README updated for the demo requests.
+- **Files:** `src/lib/leave.ts` and `src/app/actions.ts` (close any gap the
+  reviewer finds), `starter-project/README.md`.
+- **Check:** AC-25, then every AC-10…AC-25 ticked after `npm run db:seed`,
+  `npm run lint` and `npm run build` pass, and the login checks
+  AC-01…AC-09 still pass.
