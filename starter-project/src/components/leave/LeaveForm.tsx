@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useActionState } from "react";
+import { useRef, useState, useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { createLeaveRequestAction } from "@/app/actions";
 import { LEAVE_TYPES, LEAVE_TYPE_LABELS, leaveDays, type LeaveType } from "@/lib/constants";
@@ -16,7 +16,10 @@ export function LeaveForm({ supervisors }: { supervisors: { id: number; name: st
   const formRef = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState(createLeaveRequestAction, {});
   const [confirming, setConfirming] = useState(false);
-  const [success, setSuccess] = useState(false);
+  // The success pop-up is derived from the action state (no effect needed):
+  // shown when the action succeeded and not yet dismissed.
+  const [dismissed, setDismissed] = useState(false);
+  const showSuccess = Boolean(state.ok) && !dismissed;
   const [leaveType, setLeaveType] = useState("");
   const [supervisorId, setSupervisorId] = useState(String(supervisors[0]?.id ?? ""));
   const [startDate, setStartDate] = useState("");
@@ -26,10 +29,6 @@ export function LeaveForm({ supervisors }: { supervisors: { id: number; name: st
   const supervisorName =
     supervisors.find((s) => s.id === Number(supervisorId))?.name ?? "your supervisor";
 
-  useEffect(() => {
-    if (state.ok) setSuccess(true);
-  }, [state]);
-
   function askConfirm() {
     // The browser's own required-field check runs first (AC-11).
     if (!formRef.current?.reportValidity()) return;
@@ -38,6 +37,7 @@ export function LeaveForm({ supervisors }: { supervisors: { id: number; name: st
 
   function submit() {
     setConfirming(false);
+    setDismissed(false);
     if (formRef.current) action(new FormData(formRef.current));
   }
 
@@ -167,12 +167,12 @@ export function LeaveForm({ supervisors }: { supervisors: { id: number; name: st
       />
 
       <SuccessModal
-        open={success}
+        open={showSuccess}
         title="Request submitted"
         message={state.message}
         actionLabel="Back to my requests"
         onAction={() => {
-          setSuccess(false);
+          setDismissed(true);
           router.push("/employee");
           router.refresh();
         }}
