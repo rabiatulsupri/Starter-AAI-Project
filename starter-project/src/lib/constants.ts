@@ -1,6 +1,6 @@
 // Shared constants and helpers for the Budiman HRMS starter app.
-// Roles are a plain string union (SQLite has no enums).
-// The Leave Request module adds its own constants here in Session 2.
+// Roles, leave types and leave statuses are plain string unions (SQLite has
+// no enums). The Leave Request values are at the bottom.
 
 export const ROLES = ["EMPLOYEE", "SUPERVISOR", "HR", "ADMIN"] as const;
 export type Role = (typeof ROLES)[number];
@@ -70,4 +70,52 @@ export function formatTimestamp(value: Date | string): string {
   })
     .format(d)
     .replaceAll("/", "-");
+}
+
+// ---- Leave Request (design Part A §1–§2) ----
+
+export const LEAVE_TYPES = ["ANNUAL", "SICK", "OTHER"] as const;
+export type LeaveType = (typeof LEAVE_TYPES)[number];
+
+export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
+  ANNUAL: "Annual",
+  SICK: "Sick",
+  OTHER: "Other",
+};
+
+export const LEAVE_STATUSES = [
+  "SUBMITTED",
+  "SIGNED",
+  "WITH_HR",
+  "APPROVED",
+  "REJECTED",
+] as const;
+export type LeaveStatus = (typeof LEAVE_STATUSES)[number];
+
+// What the user sees for each status (Part A §2).
+export const LEAVE_STATUS_LABELS: Record<LeaveStatus, string> = {
+  SUBMITTED: "Awaiting supervisor",
+  SIGNED: "Signed – waiting to send to HR",
+  WITH_HR: "With HR",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+};
+
+export function isLeaveType(value: string): value is LeaveType {
+  return (LEAVE_TYPES as readonly string[]).includes(value);
+}
+
+export function isLeaveStatus(value: string): value is LeaveStatus {
+  return (LEAVE_STATUSES as readonly string[]).includes(value);
+}
+
+// Calendar days from start to end, inclusive (Part A rule 1): weekends
+// count, so a request always shows a whole number. The dates are YYYY-MM-DD
+// strings. A result below 1 means the end date is before the start date —
+// invalid.
+export function leaveDays(startIso: string, endIso: string): number {
+  const MS_PER_DAY = 86_400_000;
+  const startMs = Date.parse(`${startIso}T00:00:00Z`);
+  const endMs = Date.parse(`${endIso}T00:00:00Z`);
+  return (endMs - startMs) / MS_PER_DAY + 1;
 }
