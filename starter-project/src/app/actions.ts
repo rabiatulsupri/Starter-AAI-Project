@@ -17,6 +17,8 @@ import {
   leaveDays,
   type Role,
 } from "@/lib/constants";
+import { applyMove, type LeaveMove } from "@/lib/leave";
+import type { User } from "@prisma/client";
 
 // Server actions: functions that run on the server when a button is pressed.
 // Every action checks who is logged in and what they may do — hiding a button
@@ -113,4 +115,48 @@ export async function createLeaveRequestAction(
     ok: true,
     message: `${label} leave ${formatTimestamp(startDate)} → ${formatTimestamp(endDate)} (${days} ${days === 1 ? "day" : "days"}) is with ${supervisor.name}.`,
   };
+}
+
+// The four move buttons share one path: look up the session, let applyMove be
+// the single place that checks role, ownership and status (AC-25), then
+// refresh every home page so the lists and counts stay true.
+async function runMove(
+  user: User | null,
+  requestId: number,
+  move: LeaveMove,
+  remark?: string,
+): Promise<ActionResult> {
+  if (!user) return { error: "Your session expired. Please log in again." };
+  if (!Number.isInteger(requestId)) return { error: "This request does not exist." };
+  const result = await applyMove(user, requestId, move, remark);
+  if ("error" in result) return { error: result.error };
+  for (const path of ["/employee", "/supervisor", "/hr", "/admin"]) {
+    revalidatePath(path);
+  }
+  return { ok: true };
+}
+
+export async function signAction(_prev: ActionResult, requestId: number): Promise<ActionResult> {
+  return runMove(await getCurrentUser(), requestId, "sign");
+}
+
+export async function sendToHrAction(
+  _prev: ActionResult,
+  requestId: number,
+): Promise<ActionResult> {
+  return runMove(await getCurrentUser(), requestId, "send-to-hr");
+}
+
+export async function approveAction(
+  _prev: ActionResult,
+  requestId: number,
+): Promise<ActionResult> {
+  return runMove(await getCurrentUser(), requestId, "approve");
+}
+
+export async function rejectAction(
+  _prev: ActionResult,
+  input: { id: number; remark: string },
+): Promise<ActionResult> {
+  return runMove(await getCurrentUser(), input?.id, "reject", input?.remark);
 }

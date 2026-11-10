@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { listRequestsForViewer } from "@/lib/leave";
 import { LeaveTable } from "@/components/leave/LeaveTable";
+import { SendToHrButton } from "@/components/leave/LeaveActions";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { buttonClasses } from "@/components/ui/Button";
@@ -38,6 +39,10 @@ export default async function EmployeePage() {
           showSupervisor
           emptyTitle="Nothing needs your action."
           emptyDescription="Requests you have sent appear here while they are not finished."
+          renderActions={(r) =>
+            // The same move as on the detail page, right from the list (AC-19).
+            r.status === "SIGNED" ? <SendToHrButton requestId={r.id} /> : null
+          }
         />
       </Card>
 

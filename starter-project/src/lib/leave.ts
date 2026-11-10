@@ -110,3 +110,65 @@ export async function supervisorsInDivision(division: string) {
     orderBy: { name: "asc" },
   });
 }
+
+// ---- The five allowed moves (Part A §2) ----
+// applyMove is the single place a move is checked: role, the owner or the
+// addressed supervisor, the current status, and the required remark on
+// rejections. Every move-related server action calls this (AC-25).
+
+export type LeaveMove = "sign" | "send-to-hr" | "approve" | "reject";
+
+export async function applyMove(
+  user: User,
+  requestId: number,
+  move: LeaveMove,
+  remark?: string,
+): Promise<{ ok: true } | { error: string }> {
+  const r = await prisma.leaveRequest.findUnique({ where: { id: requestId } });
+  if (!r) return { error: "This request does not exist." };
+
+  const decided = { decidedByUserId: user.id, decidedAt: new Date() };
+
+  switch (move) {
+    case "sign":
+      if (user.role !== "SUPERVISOR" || r.supervisorId !== user.id || r.status !== "SUBMITTED") {
+        return { error: "Only the addressed supervisor can sign a request that awaits the supervisor." };
+      }
+      await prisma.leaveRequest.update({ where: { id: r.id }, data: { status: "SIGNED" } });
+      return { ok: true };
+
+    case "send-to-hr":
+      if (r.employeeId !== user.id || r.status !== "SIGNED") {
+        return { error: "Only you can send your own signed request to HR." };
+      }
+      await prisma.leaveRequest.update({ where: { id: r.id }, data: { status: "WITH_HR" } });
+      return { ok: true };
+
+    case "approve":
+      if (user.role !== "HR" || r.status !== "WITH_HR") {
+        return { error: "Only an HR officer can approve a request that waits for HR." };
+      }
+      await prisma.leaveRequest.update({
+        where: { id: r.id },
+        data: { status: "APPROVED", ...decided },
+      });
+      return { ok: true };
+
+    case "reject": {
+      const bySupervisor =
+        user.role === "SUPERVISOR" && r.supervisorId === user.id && r.status === "SUBMITTED";
+      const byHr = user.role === "HR" && r.status === "WITH_HR";
+      if (!bySupervisor && !byHr) {
+        return { error: "You cannot reject this request." };
+      }
+      if (!remark || !remark.trim()) {
+        return { error: "A rejection needs a remark." };
+      }
+      await prisma.leaveRequest.update({
+        where: { id: r.id },
+        data: { status: "REJECTED", rejectRemark: remark.trim(), ...decided },
+      });
+      return { ok: true };
+    }
+  }
+}

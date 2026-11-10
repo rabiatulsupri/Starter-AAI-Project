@@ -15,6 +15,7 @@ export function LeaveTable({
   showEmployee = false,
   emptyTitle,
   emptyDescription,
+  renderActions,
 }: {
   requests: LeaveView[];
   hrefBase: string; // e.g. "/employee/leave" — rows link to hrefBase/[id]
@@ -22,6 +23,7 @@ export function LeaveTable({
   showEmployee?: boolean;
   emptyTitle: string;
   emptyDescription?: string;
+  renderActions?: (r: LeaveView) => React.ReactNode; // row buttons for home pages
 }) {
   if (requests.length === 0) {
     return <EmptyState title={emptyTitle} description={emptyDescription} />;
@@ -38,6 +40,7 @@ export function LeaveTable({
             <th className="px-4 py-2.5">Status</th>
             <th className="px-4 py-2.5">Submitted</th>
             {showSupervisor ? <th className="py-2.5 pl-4 pr-5">Supervisor</th> : null}
+            {renderActions ? <th className="py-2.5 pl-4 pr-5 text-right">Action</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -66,6 +69,13 @@ export function LeaveTable({
               </td>
               {showSupervisor ? (
                 <td className="px-4 py-3 pl-4 pr-5 text-slate-600">{r.supervisorName}</td>
+              ) : null}
+              {renderActions ? (
+                <td className="py-3 pl-4 pr-5">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {renderActions(r)}
+                  </div>
+                </td>
               ) : null}
             </tr>
           ))}
