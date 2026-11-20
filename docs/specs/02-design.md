@@ -115,7 +115,8 @@ is installed.
 | `/admin` | Admin | Same placeholder for the admin | To do |
 
 Every protected page shares one header (name + role badge + Sign out
-button). The header is rendered by a shared component used by each
+button), styled as the blue band described in §8. The header is
+rendered by a shared component used by each
 role page — not by a root layout that hides pages (the Next docs warn
 that layouts don't re-render on navigation, so they are not a
 security layer).
@@ -132,8 +133,8 @@ the redirect rule in row 1.
 | `package.json` | One addition: `"prisma": { "seed": "tsx prisma/seed.ts" }` so `prisma db seed` works. No new dependencies |
 | `.env` | `DATABASE_URL="file:./dev.db"`, `SESSION_SECRET` (generated once with `openssl rand -base64 32`, never committed; `.env` stays in `.gitignore`) |
 | `.env.example` | Same keys with placeholder values, committed, so a fresh clone knows what to set |
-| `src/lib/session.ts` | `server-only`. Sign/verify the cookie with `node:crypto` HMAC; `createSession(userId, role)`, `verifySessionToken()`, `deleteSession()`; cookie options per rule 4 |
-| `src/lib/dal.ts` | `server-only`. `verifySession()` — valid session + user in DB or redirect to `/login`; `getSessionUser()` returns id, name, role; `requireRole(role)` for role checks |
+| `src/lib/session.ts` | Sign/verify the cookie with `node:crypto` HMAC; `createSession(userId, role)`, `verifySessionToken()`, `deleteSession()`; cookie options per rule 4. Imports `'server-only'` in spirit only — that package is not in the pinned dependencies (agreed: omit it); safety comes from these files being imported only by pages and actions |
+| `src/lib/dal.ts` | `verifySession()` — valid session + user in DB or redirect to `/login`; `getSessionUser()` returns id, name, role; `requireRole(role)` for role checks. Server-only imports as above |
 | `src/app/actions/auth.ts` | Server actions: `login()` — validate fields, find user, `bcrypt.compare`, `createSession`, `redirect(homeFor(role))`; `logout()` — `deleteSession`, `redirect('/login')` |
 | `src/app/login/page.tsx` | Login page (server component) |
 | `src/app/login/login-form.tsx` | Client component: the `<form>` with `useActionState`, shows the error text from the action |
@@ -186,6 +187,61 @@ bypassed by direct action calls and never touches the database.
 | `npm run dev` | Start the app at http://localhost:3000 |
 | `npx prisma studio` | Look at the tables — and check the password column holds hashes (AC-09) |
 
+## 8. Visual design
+
+Follows the mock supplied by the project owner (split login screen,
+vivid blue). Colours were pixel-sampled from the mock. This section
+changes looks only: no route, action, validation, or redirect changes,
+so every AC still applies.
+
+**Palette** — `@theme` tokens in `src/app/globals.css` (Tailwind v4),
+used as `bg-brand` etc. No new packages, no web fonts: the mock's
+geometric font is approximated with the OS default font stack, since
+adding a font package needs approval.
+
+| Token | Value | Used for |
+|-------|-------|----------|
+| `--color-brand` | `#0575E6` | login right panel, primary button, header band, artwork accents |
+| `--color-brand-dark` | `#0463C2` | button hover |
+| text | `#333333` | headings and body text (sampled) |
+| muted text | slate-500 | demo-account hints, secondary text |
+| input border | `#CCCCCC` | pill input borders (sampled) |
+| placeholder | `#999999` | placeholder text in inputs |
+| backgrounds | `#FFFFFF` | page, card, header-band button |
+
+**Login (`/login`)** — the mock's split screen:
+
+- Left half: white, centred artwork (simple inline SVG placeholder in
+  the mock's blues — no artwork file was provided; agreed with the
+  project owner). Decorative, `aria-hidden`, hidden below the `lg`
+  breakpoint.
+- Right half: full-height `#0575E6` panel, rounded left corners
+  (`rounded-3xl`), two thin white circle outlines in the bottom-right
+  corner as the mock's decoration.
+- Card: white, `rounded-2xl`, soft shadow, `max-w-md`, `p-10`,
+  vertically centred in the panel. Contents: **"Hello!"** heading
+  (`text-4xl font-bold`, `#333333`), subtitle **"Sign in to get
+  started"** (`text-xl`), the form, then the demo-account hint block
+  (small, muted, above a hairline divider — content unchanged). The
+  mock's "Sign Up to Get Started" text and "Forgot Password" link are
+  deliberately absent: no sign-up and no password reset exist (agreed
+  with the project owner).
+- Inputs are pills: `rounded-full`, 1px `#CCCCCC` border, generous
+  vertical padding, `#999999` placeholder, leading mail/lock icon
+  inside the field. Visible labels become `sr-only` labels, so the
+  inputs keep their accessible names. Error text (`role="alert"`)
+  shows in red between the fields and the button. Button: full-width
+  blue pill (`bg-brand`, white text, `hover:bg-brand-dark`), label
+  "Login".
+- Below `lg`: the artwork column disappears, the blue panel goes
+  full-width, the card centres.
+
+**Home pages (`/employee` … `/admin`)** — same language, app-shaped
+(agreed): the shared header becomes a full-width blue band —
+`bg-brand`, white name text, role badge as a `bg-white/20` pill, and
+**Sign out** as a white pill button with blue text. Content stays
+white with `#333333` headings, `max-w-2xl` container; text unchanged.
+
 ---
 
 # Reference
@@ -224,5 +280,5 @@ hash. Names and IC numbers are made up (brief §7.2).
 | admin@budiman.com | Admin | 00-193333 | Admin | Admin* | Admin Manager |
 
 \* The brief has no "Admin" division in the fixed list; the seed adds
-it as a fifth division so the admin's division field can be filled.
+it as a sixth division so the admin's division field can be filled.
 Confirm with the HR Manager.

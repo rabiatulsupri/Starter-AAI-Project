@@ -20,14 +20,14 @@ proxy is a second layer, not the only defence.
 
 | Status | # | Task | Priority | Checks (from requirements §4) |
 |--------|---|------|----------|-------------------------------|
-| To do | 1 | Set up the database and the users table | High | enables AC-05, AC-09 |
-| To do | 2 | Seed the divisions, designations and demo users | High | AC-05, AC-09 |
-| To do | 3 | Login page, form and validation | High | AC-04, AC-08 |
-| To do | 4 | Sign in for real: credentials, session, role homes | High | AC-01 (part), AC-10 (part) |
-| To do | 5 | Lock every page behind the session check | High | AC-02, AC-03, AC-07 |
-| To do | 6 | Early redirects with the proxy | Medium | AC-02, AC-10 |
-| To do | 7 | Header with the Sign out button | High | AC-06, AC-01 (header) |
-| To do | 8 | Full pass of the acceptance checklist | High | AC-01 … AC-10 |
+| Done | 1 | Set up the database and the users table | High | enables AC-05, AC-09 |
+| Done | 2 | Seed the divisions, designations and demo users | High | AC-05, AC-09 |
+| Done | 3 | Login page, form and validation | High | AC-04, AC-08 |
+| Done | 4 | Sign in for real: credentials, session, role homes | High | AC-01 (part), AC-10 (part) |
+| Done | 5 | Lock every page behind the session check | High | AC-02, AC-03, AC-07 |
+| Done | 6 | Early redirects with the proxy | Medium | AC-02, AC-10 |
+| Done | 7 | Header with the Sign out button | High | AC-06, AC-01 (header) |
+| Done | 8 | Full pass of the acceptance checklist | High | AC-01 … AC-10 |
 
 ---
 
@@ -65,7 +65,7 @@ proxy is a second layer, not the only defence.
   packages).
 - **Check (AC-05, AC-09):**
   • Run `npx prisma db seed`
-  • In Studio: 5 divisions, their designations, and the six users of
+  • In Studio: 6 divisions, their designations, and the six users of
     Reference B with correct role, division and designation
   • Look at the password column — every value starts `$2a$` or
     `$2b$`; searching the `dev.db` file for `password123` must find
