@@ -1,0 +1,39 @@
+// Prisma schema — see docs/specs/02-design.md §1.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Division {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  designations Designation[]
+  users        User[]
+}
+
+model Designation {
+  id         Int      @id @default(autoincrement())
+  name       String
+  divisionId Int
+  division   Division @relation(fields: [divisionId], references: [id])
+
+  @@unique([divisionId, name])
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  name        String
+  icNo        String   @unique
+  email       String   @unique
+  password    String
+  role        String
+  divisionId  Int
+  division    Division @relation(fields: [divisionId], references: [id])
+  designation String
+  createdAt   DateTime @default(now())
+}
